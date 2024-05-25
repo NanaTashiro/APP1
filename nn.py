@@ -96,9 +96,13 @@ predictions_2023 = make_predictions(final_nn_model, scaler.transform(new_merged_
 predictions_2024 = make_predictions(final_nn_model, X_test_normalized)
 
 # Combine predictions for all years
-predictions_df = pd.DataFrame(np.vstack([predictions_2017, predictions_2020, predictions_2023]), columns=subset_features)
-predictions_df['Election Year'] = np.repeat([2017, 2020, 2023], len(predictions_2017))
-predictions_df['Electorate'] = pd.concat([new_merged_demo_polls[new_merged_demo_polls['Election Year'] == year]['Electorate'] for year in [2017, 2020, 2023]]).values
+all_predictions = np.vstack([predictions_2017, predictions_2020, predictions_2023])
+all_years = np.repeat([2017, 2020, 2023], [len(predictions_2017), len(predictions_2020), len(predictions_2023)])
+all_electorates = pd.concat([new_merged_demo_polls[new_merged_demo_polls['Election Year'] == year]['Electorate'] for year in [2017, 2020, 2023]]).values
+
+predictions_df = pd.DataFrame(all_predictions, columns=subset_features)
+predictions_df['Election Year'] = all_years
+predictions_df['Electorate'] = all_electorates
 
 # Function to create comparison DataFrame
 def create_comparison_df(actual_df, predicted_df, year):
