@@ -65,15 +65,29 @@ scaler = MinMaxScaler()
 X_train_normalized = scaler.fit_transform(X_train)
 X_test_normalized = scaler.transform(X_test)
 
+# Neural network parameters
+nn_params = {
+    'activation': 'relu',
+    'alpha': 0.0001,
+    'batch_size': 64,
+    'early_stopping': True,
+    'hidden_layer_sizes': (50,),
+    'learning_rate': 'constant',
+    'learning_rate_init': 0.1,
+    'max_iter': 200,
+    'solver': 'adam',
+    'random_state': 42
+}
+
 # Define and train the neural network model
 def train_nn_model(X, y):
-    model = MLPRegressor(hidden_layer_sizes=(100,), activation='relu', solver='adam', max_iter=500)
+    model = MLPRegressor(**nn_params)
     model.fit(X, y)
     return model
 
 # Cross-validation for neural network
 def cross_val_nn(X, y, cv=5):
-    model = MLPRegressor(hidden_layer_sizes=(100,), activation='relu', solver='adam', max_iter=500)
+    model = MLPRegressor(**nn_params)
     scores = cross_val_score(model, X, y, scoring='neg_mean_squared_error', cv=cv)
     rmse_scores = np.sqrt(-scores)
     return rmse_scores.mean()
@@ -181,5 +195,4 @@ def plot_predictions_2024(predictions_df, electorate):
     st.pyplot(fig)
 
 plot_predictions_2024(pd.DataFrame(predictions_2024, columns=subset_features, index=prediction_data['Electorate']), electorate_2024)
-
 
