@@ -111,7 +111,7 @@ predictions_2024 = make_predictions(final_nn_model, X_test_normalized)
 
 # Combine predictions for all years
 all_predictions = np.vstack([predictions_2017, predictions_2020, predictions_2023])
-all_years = np.repeat([2017, 2020, 2023], [len(predictions_2017), len(predictions_2020), len(predictions_2023)])
+all_years = np.concatenate([np.repeat(2017, len(predictions_2017)), np.repeat(2020, len(predictions_2020)), np.repeat(2023, len(predictions_2023))])
 all_electorates = pd.concat([new_merged_demo_polls[new_merged_demo_polls['Election Year'] == year]['Electorate'] for year in [2017, 2020, 2023]]).values
 
 predictions_df = pd.DataFrame(all_predictions, columns=subset_features)
