@@ -57,12 +57,13 @@ best_params_normalized = grid_result_normalized.best_params_
 best_model_normalized = grid_result_normalized.best_estimator_
 best_rmse_normalized = np.sqrt(-grid_result_normalized.best_score_)
 
-# Perform cross-validation on the historical data
+# Prepare the data
 historical_years = [2017, 2020, 2023]
 X_historical = new_merged_demo_polls[new_merged_demo_polls['Election Year'].isin(historical_years)].drop(columns=['Election Year', 'Electorate'])
-y_historical = Y_train.loc[new_merged_demo_polls['Election Year'].isin(historical_years)]
+y_historical = Y_train_model.loc[new_merged_demo_polls['Election Year'].isin(historical_years)]
 
-# Normalize the historical data
+# Normalize the data
+scaler = MinMaxScaler()
 X_historical_normalized = scaler.fit_transform(X_historical)
 
 # Define the neural network model with the best parameters from the grid search
@@ -87,6 +88,12 @@ mean_rmse = np.mean(rmse_scores)
 
 # Train the model on the historical data
 best_model_neural.fit(X_historical_normalized, y_historical)
+
+# Make predictions for the 2024 data
+X_2024 = new_merged_demo_polls[new_merged_demo_polls['Election Year'] == 2024].drop(columns=['Election Year', 'Electorate'])
+X_2024_normalized = scaler.transform(X_2024)
+predictions_2024 = best_model_neural.predict(X_2024_normalized)
+
 
 # Make predictions for each year and ensure they are non-negative
 def make_predictions(model, data):
