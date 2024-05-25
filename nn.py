@@ -39,12 +39,15 @@ X_test_normalized = scaler.transform(X_test)
 
 # Define the parameter grid for GridSearchCV
 param_grid = {
-    'hidden_layer_sizes': [(50, 50)],
-    'activation': ['relu'],
-    'solver': ['adam'],
-    'alpha': [0.0001],
-    'learning_rate': ['constant'],
-    'max_iter': [500]
+   'activation': 'relu',
+   'alpha': 0.0001,
+   'batch_size': 64,
+   'early_stopping': True,
+   'hidden_layer_sizes': (50,), 
+   'learning_rate': 'constant', 
+   'learning_rate_init': 0.1, 
+   'max_iter': 200, 
+   'solver': 'adam'
 }
 
 # Perform grid search for normalized data
@@ -60,7 +63,7 @@ best_rmse_normalized = np.sqrt(-grid_result_normalized.best_score_)
 # Prepare the data
 historical_years = [2017, 2020, 2023]
 X_historical = new_merged_demo_polls[new_merged_demo_polls['Election Year'].isin(historical_years)].drop(columns=['Election Year', 'Electorate'])
-y_historical = Y_train_model.loc[new_merged_demo_polls['Election Year'].isin(historical_years)]
+y_historical = combined_targets_train.loc[new_merged_demo_polls['Election Year'].isin(historical_years)]
 
 # Normalize the data
 scaler = MinMaxScaler()
@@ -70,13 +73,14 @@ X_historical_normalized = scaler.fit_transform(X_historical)
 best_model_neural = MLPRegressor(
     activation='relu',
     alpha=0.0001,
+    batch_size=64,
+    early_stopping=True,
     hidden_layer_sizes=(50,),
     learning_rate='constant',
     learning_rate_init=0.1,
     max_iter=200,
     solver='adam',
-    batch_size=64,
-    early_stopping=True
+    random_state=42  # Set the random state for reproducibility
 )
 
 # Perform cross-validation
@@ -90,13 +94,12 @@ mean_rmse = np.mean(rmse_scores)
 best_model_neural.fit(X_historical_normalized, y_historical)
 
 # Make predictions for the 2024 data
-X_2024 = new_merged_demo_polls[new_merged_demo_polls['Election Year'] == 2024].drop(columns=['Election Year', 'Electorate'])
-X_2024_normalized = scaler.transform(X_2024)
+X_2024_normalized = scaler.transform(X_test)
 predictions_2024 = best_model_neural.predict(X_2024_normalized)
 
 # Combine predictions with election year and electorates
 def create_predictions_df(predictions, year, electorates):
-    df = pd.DataFrame(predictions, columns=Y_train_model.columns)
+    df = pd.DataFrame(predictions, columns=Y_train.columns)
     df['Election Year'] = year
     df['Electorate'] = electorates
     return df
@@ -127,12 +130,6 @@ predictions_2023 = make_predictions(best_model_normalized, X_2023_normalized)
 predictions_2024 = make_predictions(best_model_normalized, X_2024_normalized)
 
 # Combine predictions with election year and electorates
-def create_predictions_df(predictions, year, electorates):
-    df = pd.DataFrame(predictions, columns=Y_train.columns)
-    df['Election Year'] = year
-    df['Electorate'] = electorates
-    return df
-
 electorates_2017 = new_merged_demo_polls[new_merged_demo_polls['Election Year'] == 2017]['Electorate'].values
 electorates_2020 = new_merged_demo_polls[new_merged_demo_polls['Election Year'] == 2020]['Electorate'].values
 electorates_2023 = new_merged_demo_polls[new_merged_demo_polls['Election Year'] == 2023]['Electorate'].values
@@ -144,7 +141,7 @@ predictions_2023_df = create_predictions_df(predictions_2023, 2023, electorates_
 predictions_2024_df = create_predictions_df(predictions_2024, 2024, electorates_2024)
 
 # Combine predictions for all years into a single DataFrame
-all_predictions_df = pd.concat([predictions_2017_df, predictions_2020_df, predictions_2023_df])
+all_predictions_df = pd.concat([predictions_2017_df, predictions_2020_df, predictions_2023_df, predictions_2024_df])
 all_predictions_df = all_predictions_df[['Election Year', 'Electorate'] + list(Y_train.columns)]
 
 # Subset of features (party votes)
