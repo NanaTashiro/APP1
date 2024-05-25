@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.neural_network import MLPRegressor
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import GridSearchCV, train_test_split, cross_val_score
 from sklearn.metrics import mean_squared_error
 
 # Load datasets
@@ -184,5 +184,4 @@ plot_comparison(comparison_df, year, electorate)
 st.header("Predictions for 2024")
 electorate_2024 = st.selectbox("Select Electorate for 2024", prediction_data['Electorate'].unique())
 plot_predictions_2024(predictions_2024_df, electorate_2024)
-
 
