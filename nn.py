@@ -204,11 +204,11 @@ def plot_predictions_2024(predictions_df, electorate):
     
     # Add vote counts on top of each bar
     for index, row in predictions.iterrows():
-        ax.text(index, row['Votes'], f'{row["Votes"]:.2f}%', color='black', ha="center")
+        ax.text(index, row['Votes'], f'{row["Votes"]:.2f}', color='black', ha="center")
     
     ax.set_title(f'Predicted Votes for {electorate} in 2024')
     ax.set_xlabel('Party')
-    ax.set_ylabel('Votes (%)')
+    ax.set_ylabel('Votes')
     ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
     st.pyplot(fig)
 
@@ -216,5 +216,6 @@ def plot_predictions_2024(predictions_df, electorate):
 st.header("Predictions for 2024")
 electorate_2024 = st.selectbox("Select Electorate for 2024", prediction_data['Electorate'].unique())
 plot_predictions_2024(final_predictions_2024_df, electorate_2024)
+
 
 
