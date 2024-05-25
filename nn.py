@@ -57,13 +57,36 @@ best_params_normalized = grid_result_normalized.best_params_
 best_model_normalized = grid_result_normalized.best_estimator_
 best_rmse_normalized = np.sqrt(-grid_result_normalized.best_score_)
 
+# Perform cross-validation on the historical data
+historical_years = [2017, 2020, 2023]
+X_historical = new_merged_demo_polls[new_merged_demo_polls['Election Year'].isin(historical_years)].drop(columns=['Election Year', 'Electorate'])
+y_historical = Y_train.loc[new_merged_demo_polls['Election Year'].isin(historical_years)]
+
+# Normalize the historical data
+X_historical_normalized = scaler.fit_transform(X_historical)
+
+# Define the neural network model with the best parameters from the grid search
+best_model_neural = MLPRegressor(
+    activation='relu',
+    alpha=0.0001,
+    hidden_layer_sizes=(50,),
+    learning_rate='constant',
+    learning_rate_init=0.1,
+    max_iter=200,
+    solver='adam',
+    batch_size=64,
+    early_stopping=True
+)
+
 # Perform cross-validation
-cv_scores = cross_val_score(best_model_normalized, X_train_normalized, Y_train.values, cv=5, scoring='neg_mean_squared_error')
+cv_scores = cross_val_score(best_model_neural, X_historical_normalized, y_historical, cv=5, scoring='neg_mean_squared_error')
+
+# Calculate RMSE for each fold
 rmse_scores = np.sqrt(-cv_scores)
 mean_rmse = np.mean(rmse_scores)
 
-# Train the model on historical data
-best_model_normalized.fit(X_train_normalized, Y_train.values)
+# Train the model on the historical data
+best_model_neural.fit(X_historical_normalized, y_historical)
 
 # Make predictions for each year and ensure they are non-negative
 def make_predictions(model, data):
