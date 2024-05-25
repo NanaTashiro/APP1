@@ -94,6 +94,12 @@ X_2024 = new_merged_demo_polls[new_merged_demo_polls['Election Year'] == 2024].d
 X_2024_normalized = scaler.transform(X_2024)
 predictions_2024 = best_model_neural.predict(X_2024_normalized)
 
+# Combine predictions with election year and electorates
+def create_predictions_df(predictions, year, electorates):
+    df = pd.DataFrame(predictions, columns=Y_train_model.columns)
+    df['Election Year'] = year
+    df['Electorate'] = electorates
+    return df
 
 # Make predictions for each year and ensure they are non-negative
 def make_predictions(model, data):
