@@ -62,8 +62,16 @@ X_historical = new_merged_demo_polls[new_merged_demo_polls['Election Year'].isin
 y_historical = combined_targets_train.loc[new_merged_demo_polls['Election Year'].isin(historical_years)]
 
 # Normalize the data
-scaler = MinMaxScaler()
 X_historical_normalized = scaler.fit_transform(X_historical)
+
+# Check for NaN or infinite values
+if np.any(np.isnan(X_historical_normalized)) or np.any(np.isnan(y_historical)) or np.any(np.isinf(X_historical_normalized)) or np.any(np.isinf(y_historical)):
+    st.error("Data contains NaN or infinite values. Please clean the data and try again.")
+    st.stop()
+
+# Ensure y_historical is in the correct shape
+if len(y_historical.shape) == 1:
+    y_historical = y_historical.values.reshape(-1, 1)
 
 # Define the neural network model with the best parameters from the grid search
 best_model_neural = MLPRegressor(
@@ -80,11 +88,14 @@ best_model_neural = MLPRegressor(
 )
 
 # Perform cross-validation
-cv_scores = cross_val_score(best_model_neural, X_historical_normalized, y_historical, cv=5, scoring='neg_mean_squared_error')
-
-# Calculate RMSE for each fold
-rmse_scores = np.sqrt(-cv_scores)
-mean_rmse = np.mean(rmse_scores)
+try:
+    cv_scores = cross_val_score(best_model_neural, X_historical_normalized, y_historical, cv=5, scoring='neg_mean_squared_error')
+    # Calculate RMSE for each fold
+    rmse_scores = np.sqrt(-cv_scores)
+    mean_rmse = np.mean(rmse_scores)
+except ValueError as e:
+    st.error(f"Cross-validation failed: {e}")
+    st.stop()
 
 # Train the model on the historical data
 best_model_neural.fit(X_historical_normalized, y_historical)
@@ -99,6 +110,8 @@ def create_predictions_df(predictions, year, electorates):
     df['Election Year'] = year
     df['Electorate'] = electorates
     return df
+
+predictions_2024_df1 = create_predictions_df(predictions_2024, 2024, new_merged_demo_polls[new_merged_demo_polls['Election Year'] == 2024]['Electorate'].values)
 
 # Make predictions for each year and ensure they are non-negative
 def make_predictions(model, data):
@@ -154,82 +167,68 @@ party_colors = {
 }
 
 # Function to create comparison DataFrame for a single year
-def create_comparison_df(year, electorate):
-    actual_df = new_combined_result_list[(new_combined_result_list['Election Year'] == year) & (new_combined_result_list['Electorate'] == electorate)]
-    predicted_df = all_predictions_df[(all_predictions_df['Election Year'] == year) & (all_predictions_df['Electorate'] == electorate)]
-    
-    comparison_df = pd.DataFrame()
-    for feature in subset_features:
-        actual_values = actual_df[feature].values
-        predicted_values = predicted_df[feature].values
-        
-        temp_df = pd.DataFrame({
-            'Feature': feature,
-            'Actual': actual_values,
-            'Predicted': predicted_values
-        })
-        comparison_df = pd.concat([comparison_df, temp_df], ignore_index=True)
+def create_comparison_df(year):
+    actual_df = new_combined_result_list[new_combined_result_list['Election Year'] == year].reset_index(drop=True)
+    predicted_df = all_predictions_df[all_predictions_df['Election Year'] == year].reset_index(drop=True)
+    comparison_df = pd.DataFrame({
+        'Electorate': actual_df['Electorate'],
+        'Actual Votes': actual_df[subset_features].sum(axis=1),
+        'Predicted Votes': predicted_df[subset_features].sum(axis=1)
+    })
     return comparison_df
 
-# Function to plot comparison for a single year
-def plot_comparison(comparison_df, year, electorate):
-    if comparison_df.empty:
-        st.write(f"No common electorates for {year}. Skipping plot.")
-        return
-    
-    fig, ax = plt.subplots()
-    comparison_df = comparison_df.melt(id_vars=['Feature'], value_vars=['Actual', 'Predicted'], var_name='Type', value_name='Votes')
-    sns.lineplot(data=comparison_df, x='Feature', y='Votes', hue='Type', marker='o', ax=ax)
-    ax.set_title(f'Comparison of Actual and Predicted Votes by Party for {electorate} in {year}')
-    ax.set_xlabel('Party')
-    ax.set_ylabel('Votes')
-    ax.set_xticks(range(len(subset_features)))
-    ax.set_xticklabels(subset_features, rotation=45, ha='right')
-    ax.legend()
-    st.pyplot(fig)
+# Comparison DataFrames for each year
+comparison_df_2017 = create_comparison_df(2017)
+comparison_df_2020 = create_comparison_df(2020)
+comparison_df_2023 = create_comparison_df(2023)
+comparison_df_2024 = create_comparison_df(2024)
 
-# Function to plot 2024 predictions with color by party name as bar charts and add results number
-def plot_predictions_2024(predictions_df, electorate):
-    predictions = predictions_df[predictions_df['Electorate'] == electorate]
-    if predictions.empty:
-        st.write(f"No data available for {electorate} in 2024.")
-        return
+# Plotting function
+def plot_predictions(year, actual_df, predicted_df, title):
+    plt.figure(figsize=(10, 6))
+    bar_width = 0.35
+    r1 = np.arange(len(actual_df['Electorate']))
+    r2 = [x + bar_width for x in r1]
     
-    predictions = predictions.melt(id_vars=['Electorate'], value_vars=subset_features, var_name='Party', value_name='Votes')
+    plt.bar(r1, actual_df['Actual Votes'], color='blue', width=bar_width, edgecolor='grey', label='Actual Votes')
+    plt.bar(r2, predicted_df['Predicted Votes'], color='red', width=bar_width, edgecolor='grey', label='Predicted Votes')
     
-    fig, ax = plt.subplots()
-    sns.barplot(data=predictions, x='Party', y='Votes', palette=party_colors, ax=ax)
-    
-    # Add vote counts on top of each bar
-    for index, row in predictions.iterrows():
-        ax.text(index, row['Votes'], f'{row["Votes"]:.2f}', color='black', ha="center")
-    
-    ax.set_title(f'Predicted Votes for {electorate} in 2024')
-    ax.set_xlabel('Party')
-    ax.set_ylabel('Votes')
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
-    st.pyplot(fig)
+    plt.xlabel('Electorates', fontweight='bold')
+    plt.xticks([r + bar_width / 2 for r in range(len(actual_df['Electorate']))], actual_df['Electorate'], rotation=90)
+    plt.ylabel('Votes')
+    plt.title(title)
+    plt.legend()
+    plt.tight_layout()
+    st.pyplot(plt)
 
-# Streamlit app
-st.title("Neural Network Election Prediction Performance")
+# Streamlit layout
+st.title("Election Prediction Model")
 
-st.header("Initial Model Performance")
-st.write(f"Best parameters: {best_params_normalized}")
-st.write(f"Best RMSE: {best_rmse_normalized}")
+st.write(f"## Model Performance")
+st.write(f"Best parameters (Normalized Data): {best_params_normalized}")
+st.write(f"Best RMSE (Normalized Data): {best_rmse_normalized:.2f}")
 
-st.header("Cross-Validation Performance")
+st.write("## Cross-validation Results")
 st.write(f"Cross-validation RMSE scores: {rmse_scores}")
 st.write(f"Mean cross-validation RMSE: {mean_rmse}")
 
-# User inputs for comparison
-st.header("Compare Actual and Predicted Votes")
-year = st.selectbox("Select Year", [2017, 2020, 2023])
-electorate = st.selectbox("Select Electorate", new_combined_result_list['Electorate'].unique())
+st.write("## Predictions for 2024")
+st.dataframe(predictions_2024_df1)
 
-comparison_df = create_comparison_df(year, electorate)
-plot_comparison(comparison_df, year, electorate)
+# Plot comparisons
+st.write("## Comparison of Actual and Predicted Votes")
+st.write("### Year 2017")
+plot_predictions(2017, comparison_df_2017, comparison_df_2017, "2017 Actual vs Predicted Votes")
 
-# User input for 2024 predictions
-st.header("Predictions for 2024")
-electorate_2024 = st.selectbox("Select Electorate for 2024", prediction_data['Electorate'].unique())
-plot_predictions_2024(predictions_2024_df, electorate_2024)
+st.write("### Year 2020")
+plot_predictions(2020, comparison_df_2020, comparison_df_2020, "2020 Actual vs Predicted Votes")
+
+st.write("### Year 2023")
+plot_predictions(2023, comparison_df_2023, comparison_df_2023, "2023 Actual vs Predicted Votes")
+
+st.write("### Year 2024")
+plot_predictions(2024, comparison_df_2024, comparison_df_2024, "2024 Actual vs Predicted Votes")
+
+st.write("## Combined Predictions")
+st.dataframe(all_predictions_df)
+
