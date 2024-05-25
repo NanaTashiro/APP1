@@ -48,43 +48,20 @@ param_grid = {
     'random_state'=42
 }
 
-# Perform grid search for normalized data
-mlp_normalized = MLPRegressor(random_state=42)
-grid_normalized = GridSearchCV(estimator=mlp_normalized, param_grid=param_grid, cv=3, scoring='neg_mean_squared_error', verbose=1)
-grid_result_normalized = grid_normalized.fit(X_train_normalized, Y_train.values)
-
-# Display the best parameters and RMSE for normalized data
-best_params_normalized = grid_result_normalized.best_params_
-best_model_normalized = grid_result_normalized.best_estimator_
-best_rmse_normalized = np.sqrt(-grid_result_normalized.best_score_)
+# Perform cross-validation
+cv_scores = cross_val_score(best_model, X_train_normalized, Y_train.values, cv=5, scoring='neg_mean_squared_error')
+rmse_scores = np.sqrt(-cv_scores)
+mean_rmse = np.mean(rmse_scores)
 
 # Train the model on historical data
-best_model_normalized.fit(X_train_normalized, Y_train.values)
+best_model.fit(X_train_normalized, Y_train.values)
 
 # Make predictions for each year and ensure they are non-negative
 def make_predictions(model, data):
     predictions = model.predict(data)
     return np.clip(predictions, 0, None)
 
-# Prepare the data for each year
-def prepare_data(df, year):
-    return df[df['Election Year'] == year].drop(columns=['Election Year', 'Electorate'])
-
-X_2017 = prepare_data(new_merged_demo_polls, 2017)
-X_2020 = prepare_data(new_merged_demo_polls, 2020)
-X_2023 = prepare_data(new_merged_demo_polls, 2023)
-X_2024 = prepare_data(new_merged_demo_polls, 2024)
-
-# Normalize the data for each year
-X_2017_normalized = scaler.transform(X_2017)
-X_2020_normalized = scaler.transform(X_2020)
-X_2023_normalized = scaler.transform(X_2023)
-X_2024_normalized = scaler.transform(X_2024)
-
-predictions_2017 = make_predictions(best_model_normalized, X_2017_normalized)
-predictions_2020 = make_predictions(best_model_normalized, X_2020_normalized)
-predictions_2023 = make_predictions(best_model_normalized, X_2023_normalized)
-predictions_2024 = make_predictions(best_model_normalized, X_2024_normalized)
+predictions_2024 = make_predictions(best_model, X_test_normalized)
 
 # Combine predictions with election year and electorates
 def create_predictions_df(predictions, year, electorates):
@@ -93,17 +70,22 @@ def create_predictions_df(predictions, year, electorates):
     df['Electorate'] = electorates
     return df
 
-electorates_2017 = new_merged_demo_polls[new_merged_demo_polls['Election Year'] == 2017]['Electorate'].values
-electorates_2020 = new_merged_demo_polls[new_merged_demo_polls['Election Year'] == 2020]['Electorate'].values
-electorates_2023 = new_merged_demo_polls[new_merged_demo_polls['Election Year'] == 2023]['Electorate'].values
-electorates_2024 = new_merged_demo_polls[new_merged_demo_polls['Election Year'] == 2024]['Electorate'].values
+electorates_2024 = prediction_data['Electorate'].values
+predictions_2024_df = create_predictions_df(predictions_2024, 2024, electorates_2024)
+
+# Combine predictions for all years into a single DataFrame
+electorates_2017 = combined_data_train[combined_data_train['Election Year'] == 2017]['Electorate'].values
+electorates_2020 = combined_data_train[combined_data_train['Election Year'] == 2020]['Electorate'].values
+electorates_2023 = combined_data_train[combined_data_train['Election Year'] == 2023]['Electorate'].values
+
+predictions_2017 = make_predictions(best_model, scaler.transform(combined_data_train[combined_data_train['Election Year'] == 2017].drop(columns=['Election Year', 'Electorate'])))
+predictions_2020 = make_predictions(best_model, scaler.transform(combined_data_train[combined_data_train['Election Year'] == 2020].drop(columns=['Election Year', 'Electorate'])))
+predictions_2023 = make_predictions(best_model, scaler.transform(combined_data_train[combined_data_train['Election Year'] == 2023].drop(columns=['Election Year', 'Electorate'])))
 
 predictions_2017_df = create_predictions_df(predictions_2017, 2017, electorates_2017)
 predictions_2020_df = create_predictions_df(predictions_2020, 2020, electorates_2020)
 predictions_2023_df = create_predictions_df(predictions_2023, 2023, electorates_2023)
-predictions_2024_df = create_predictions_df(predictions_2024, 2024, electorates_2024)
 
-# Combine predictions for all years into a single DataFrame
 all_predictions_df = pd.concat([predictions_2017_df, predictions_2020_df, predictions_2023_df])
 all_predictions_df = all_predictions_df[['Election Year', 'Electorate'] + list(Y_train.columns)]
 
@@ -169,6 +151,35 @@ def plot_predictions_2024(predictions_df, electorate):
     
     # Add vote counts on top of each bar
     for index, row in predictions.iterrows():
-        ax.text(index, row['Votes'], f'{row["Votes"]:.2f}%', color='black', ha="
+        ax.text(index, row['Votes'], f'{row["Votes"]:.2f}%', color='black', ha="center")
+    
+    ax.set_title(f'Predicted Votes for {electorate} in 2024')
+    ax.set_xlabel('Party')
+    ax.set_ylabel('Votes (%)')
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+    st.pyplot(fig)
+
+# Streamlit app
+st.title("Neural Network Election Prediction Performance")
+
+st.header("Initial Model Performance")
+st.write(f"Best parameters: {{'activation': 'relu', 'alpha': 0.0001, 'hidden_layer_sizes': (50, 50), 'learning_rate': 'constant', 'max_iter': 500, 'solver': 'adam'}}")
+
+st.header("Cross-Validation Performance")
+st.write(f"Cross-validation RMSE scores: {rmse_scores}")
+st.write(f"Mean cross-validation RMSE: {mean_rmse}")
+
+# User inputs for comparison
+st.header("Compare Actual and Predicted Votes")
+year = st.selectbox("Select Year", [2017, 2020, 2023])
+electorate = st.selectbox("Select Electorate", new_combined_result_list['Electorate'].unique())
+
+comparison_df = create_comparison_df(year, electorate)
+plot_comparison(comparison_df, year, electorate)
+
+# User input for 2024 predictions
+st.header("Predictions for 2024")
+electorate_2024 = st.selectbox("Select Electorate for 2024", prediction_data['Electorate'].unique())
+plot_predictions_2024(predictions_2024_df, electorate_2024)
 
 
