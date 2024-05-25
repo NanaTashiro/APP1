@@ -65,7 +65,7 @@ y_historical = combined_targets_train.loc[new_merged_demo_polls['Election Year']
 X_historical_normalized = scaler.fit_transform(X_historical)
 
 # Check for NaN or infinite values
-if np.any(np.isnan(X_historical_normalized)) or np.any(np.isnan(y_historical)) or np.any(np.isinf(X_historical_normalized)) or np.any(np.isinf(y_historical)):
+if X_historical.isna().any().any() or y_historical.isna().any().any() or np.isinf(X_historical).any() or np.isinf(y_historical).any():
     st.error("Data contains NaN or infinite values. Please clean the data and try again.")
     st.stop()
 
@@ -231,4 +231,5 @@ plot_predictions(2024, comparison_df_2024, comparison_df_2024, "2024 Actual vs P
 
 st.write("## Combined Predictions")
 st.dataframe(all_predictions_df)
+
 
