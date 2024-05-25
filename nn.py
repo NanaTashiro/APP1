@@ -44,9 +44,7 @@ param_grid = {
     'solver': ['adam'],
     'alpha': [0.0001],
     'learning_rate': ['constant'],
-    'learning_rate_init': [0.1],
-    'max_iter': [500],
-    'early_stopping': [True]
+    'max_iter': [500]
 }
 
 # Perform grid search for normalized data
