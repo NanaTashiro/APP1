@@ -39,15 +39,11 @@ X_test_normalized = scaler.transform(X_test)
 
 # Define the parameter grid for GridSearchCV
 param_grid = {
-   'activation': 'relu',
-   'alpha': 0.0001,
-   'batch_size': 64,
-   'early_stopping': True,
-   'hidden_layer_sizes': (50,), 
-   'learning_rate': 'constant', 
-   'learning_rate_init': 0.1, 
-   'max_iter': 200, 
-   'solver': 'adam'
+    'hidden_layer_sizes': [(50,), (100,), (50, 50)],
+    'activation': ['relu', 'tanh'],
+    'solver': ['adam', 'sgd'],
+    'alpha': [0.0001, 0.001],
+    'learning_rate_init': [0.01, 0.1]
 }
 
 # Perform grid search for normalized data
@@ -71,15 +67,15 @@ X_historical_normalized = scaler.fit_transform(X_historical)
 
 # Define the neural network model with the best parameters from the grid search
 best_model_neural = MLPRegressor(
-    activation='relu',
-    alpha=0.0001,
+    activation=best_params_normalized['activation'],
+    alpha=best_params_normalized['alpha'],
     batch_size=64,
     early_stopping=True,
-    hidden_layer_sizes=(50,),
+    hidden_layer_sizes=best_params_normalized['hidden_layer_sizes'],
     learning_rate='constant',
-    learning_rate_init=0.1,
+    learning_rate_init=best_params_normalized['learning_rate_init'],
     max_iter=200,
-    solver='adam',
+    solver=best_params_normalized['solver'],
     random_state=42  # Set the random state for reproducibility
 )
 
@@ -237,4 +233,3 @@ plot_comparison(comparison_df, year, electorate)
 st.header("Predictions for 2024")
 electorate_2024 = st.selectbox("Select Electorate for 2024", prediction_data['Electorate'].unique())
 plot_predictions_2024(predictions_2024_df, electorate_2024)
-
