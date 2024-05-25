@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.neural_network import MLPRegressor
-from sklearn.model_selection import GridSearchCV, train_test_split, cross_val_score
+from sklearn.model_selection import cross_val_score
 from sklearn.metrics import mean_squared_error
 
 # Load datasets
@@ -37,29 +37,21 @@ scaler = MinMaxScaler()
 X_train_normalized = scaler.fit_transform(X_train)
 X_test_normalized = scaler.transform(X_test)
 
-# Define the model and parameters
-param_grid = {
-    'hidden_layer_sizes': [(50,), (50, 50)],
-    'activation': ['relu'],
-    'solver': ['adam'],
-    'alpha': [0.0001],
-    'batch_size': [32, 64],
-    'learning_rate': ['constant'],
-    'learning_rate_init': [0.1],
-    'max_iter': [200],
-    'early_stopping': [True]
-}
+# Define the model with the best parameters
+best_model = MLPRegressor(
+    activation='relu',
+    alpha=0.0001,
+    hidden_layer_sizes=(50, 50),
+    learning_rate='constant',
+    learning_rate_init=0.1,
+    max_iter=500,
+    solver='adam',
+    batch_size=64,
+    early_stopping=True,
+    random_state=42
+)
 
-# Initial model
-mlp = MLPRegressor(random_state=42)
-grid = GridSearchCV(estimator=mlp, param_grid=param_grid, cv=3, scoring='neg_mean_squared_error', verbose=1)
-grid_result = grid.fit(X_train_normalized, Y_train.values)
-
-best_params = grid_result.best_params_
-best_model = grid_result.best_estimator_
-best_rmse = np.sqrt(-grid_result.best_score_)
-
-# Cross-validation
+# Perform cross-validation
 cv_scores = cross_val_score(best_model, X_train_normalized, Y_train.values, cv=5, scoring='neg_mean_squared_error')
 rmse_scores = np.sqrt(-cv_scores)
 mean_rmse = np.mean(rmse_scores)
@@ -84,43 +76,113 @@ def create_predictions_df(predictions, year, electorates):
 electorates_2024 = prediction_data['Electorate'].values
 predictions_2024_df = create_predictions_df(predictions_2024, 2024, electorates_2024)
 
+# Combine predictions for all years into a single DataFrame
+electorates_2017 = combined_data_train[combined_data_train['Election Year'] == 2017]['Electorate'].values
+electorates_2020 = combined_data_train[combined_data_train['Election Year'] == 2020]['Electorate'].values
+electorates_2023 = combined_data_train[combined_data_train['Election Year'] == 2023]['Electorate'].values
+
+predictions_2017 = make_predictions(best_model, scaler.transform(combined_data_train[combined_data_train['Election Year'] == 2017].drop(columns=['Election Year', 'Electorate'])))
+predictions_2020 = make_predictions(best_model, scaler.transform(combined_data_train[combined_data_train['Election Year'] == 2020].drop(columns=['Election Year', 'Electorate'])))
+predictions_2023 = make_predictions(best_model, scaler.transform(combined_data_train[combined_data_train['Election Year'] == 2023].drop(columns=['Election Year', 'Electorate'])))
+
+predictions_2017_df = create_predictions_df(predictions_2017, 2017, electorates_2017)
+predictions_2020_df = create_predictions_df(predictions_2020, 2020, electorates_2020)
+predictions_2023_df = create_predictions_df(predictions_2023, 2023, electorates_2023)
+
+all_predictions_df = pd.concat([predictions_2017_df, predictions_2020_df, predictions_2023_df])
+all_predictions_df = all_predictions_df[['Election Year', 'Electorate'] + list(Y_train.columns)]
+
+# Subset of features (party votes)
+subset_features = ['National Party Vote', 'Labour Party Vote', 'Green Party Vote', 'New Zealand First Party Vote', 'ACT New Zealand Vote', 'Others Vote']
+
+# Defining party colors
+party_colors = {
+    'ACT New Zealand Vote': 'yellow',
+    'Green Party Vote': 'green',
+    'Labour Party Vote': 'red',
+    'National Party Vote': 'blue',
+    'New Zealand First Party Vote': 'black',
+    'Others Vote': 'grey'
+}
+
+# Function to create comparison DataFrame for a single year
+def create_comparison_df(year, electorate):
+    actual_df = new_combined_result_list[(new_combined_result_list['Election Year'] == year) & (new_combined_result_list['Electorate'] == electorate)]
+    predicted_df = all_predictions_df[(all_predictions_df['Election Year'] == year) & (all_predictions_df['Electorate'] == electorate)]
+    
+    comparison_df = pd.DataFrame()
+    for feature in subset_features:
+        actual_values = actual_df[feature].values
+        predicted_values = predicted_df[feature].values
+        
+        temp_df = pd.DataFrame({
+            'Feature': feature,
+            'Actual': actual_values,
+            'Predicted': predicted_values
+        })
+        comparison_df = pd.concat([comparison_df, temp_df], ignore_index=True)
+    return comparison_df
+
+# Function to plot comparison for a single year
+def plot_comparison(comparison_df, year, electorate):
+    if comparison_df.empty:
+        st.write(f"No common electorates for {year}. Skipping plot.")
+        return
+    
+    fig, ax = plt.subplots()
+    comparison_df = comparison_df.melt(id_vars=['Feature'], value_vars=['Actual', 'Predicted'], var_name='Type', value_name='Votes')
+    sns.lineplot(data=comparison_df, x='Feature', y='Votes', hue='Type', marker='o', ax=ax)
+    ax.set_title(f'Comparison of Actual and Predicted Votes by Party for {electorate} in {year}')
+    ax.set_xlabel('Party')
+    ax.set_ylabel('Votes')
+    ax.set_xticks(range(len(subset_features)))
+    ax.set_xticklabels(subset_features, rotation=45, ha='right')
+    ax.legend()
+    st.pyplot(fig)
+
+# Function to plot 2024 predictions with color by party name as bar charts and add results number
+def plot_predictions_2024(predictions_df, electorate):
+    predictions = predictions_df[predictions_df['Electorate'] == electorate]
+    if predictions.empty:
+        st.write(f"No data available for {electorate} in 2024.")
+        return
+    
+    predictions = predictions.melt(id_vars=['Electorate'], value_vars=subset_features, var_name='Party', value_name='Votes')
+    
+    fig, ax = plt.subplots()
+    sns.barplot(data=predictions, x='Party', y='Votes', palette=party_colors, ax=ax)
+    
+    # Add vote counts on top of each bar
+    for index, row in predictions.iterrows():
+        ax.text(index, row['Votes'], f'{row["Votes"]:.2f}%', color='black', ha="center")
+    
+    ax.set_title(f'Predicted Votes for {electorate} in 2024')
+    ax.set_xlabel('Party')
+    ax.set_ylabel('Votes (%)')
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+    st.pyplot(fig)
+
 # Streamlit app
 st.title("Neural Network Election Prediction Performance")
 
 st.header("Initial Model Performance")
-st.write(f"Best parameters: {best_params}")
-st.write(f"Best RMSE: {best_rmse}")
+st.write(f"Best parameters: {{'activation': 'relu', 'alpha': 0.0001, 'hidden_layer_sizes': (50, 50), 'learning_rate': 'constant', 'max_iter': 500, 'solver': 'adam'}}")
 
 st.header("Cross-Validation Performance")
 st.write(f"Cross-validation RMSE scores: {rmse_scores}")
 st.write(f"Mean cross-validation RMSE: {mean_rmse}")
 
-st.header("Predictions for 2024")
-def plot_predictions_2024(predictions_df):
-    subset_features = ['National Party Vote', 'Labour Party Vote', 'Green Party Vote', 'New Zealand First Party Vote', 'ACT New Zealand Vote', 'Others Vote']
-    party_colors = {
-        'ACT New Zealand Vote': 'yellow',
-        'Green Party Vote': 'green',
-        'Labour Party Vote': 'red',
-        'National Party Vote': 'blue',
-        'New Zealand First Party Vote': 'black',
-        'Others Vote': 'grey'
-    }
-    predictions_melted = pd.melt(predictions_df, id_vars=['Electorate'], value_vars=subset_features, var_name='Party', value_name='Votes')
-    g = sns.FacetGrid(predictions_melted, col='Electorate', col_wrap=4, height=4, sharey=False, hue='Party', palette=party_colors)
-    g.map_dataframe(sns.barplot, x='Party', y='Votes', palette=party_colors)
-    for ax in g.axes.flatten():
-        for container in ax.containers:
-            ax.bar_label(container, fmt='%.1f', label_type='edge', fontsize=8, padding=3)
-    g.add_legend()
-    for ax in g.axes.flatten():
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
-        ax.set_xlabel("Party", fontsize=12)
-        ax.set_ylabel("Votes", fontsize=12)
-    g.set_titles("{col_name}", size=13)
-    g.set_axis_labels("Party", "Votes")
-    plt.subplots_adjust(top=0.92, hspace=0.4, wspace=0.4)
-    g.fig.suptitle('Predicted Votes by Party for Each Electorate in Auckland Region in 2024', fontsize=16)
-    plt.show()
+# User inputs for comparison
+st.header("Compare Actual and Predicted Votes")
+year = st.selectbox("Select Year", [2017, 2020, 2023])
+electorate = st.selectbox("Select Electorate", new_combined_result_list['Electorate'].unique())
 
-plot_predictions_2024(predictions_2024_df)
+comparison_df = create_comparison_df(year, electorate)
+plot_comparison(comparison_df, year, electorate)
+
+# User input for 2024 predictions
+st.header("Predictions for 2024")
+electorate_2024 = st.selectbox("Select Electorate for 2024", prediction_data['Electorate'].unique())
+plot_predictions_2024(predictions_2024_df, electorate_2024)
+
+
