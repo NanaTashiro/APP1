@@ -264,13 +264,14 @@ def plot_predictions_2024(predictions_df, electorate):
     
     predictions = predictions.melt(id_vars=['Electorate'], value_vars=subset_features, var_name='Party', value_name='Votes')
     
-    # Prepare the title with vote counts
-    title = f'Predicted Votes for {electorate} in 2024\n'
-    title += ' | '.join([f'{row["Party"]}: {row["Votes"]:.2f}%' for index, row in predictions.iterrows()])
-    
     fig, ax = plt.subplots()
     sns.barplot(data=predictions, x='Party', y='Votes', palette=party_colors, ax=ax)
-    ax.set_title(title)
+    
+    # Add vote counts on top of each bar
+    for index, row in predictions.iterrows():
+        ax.text(index, row['Votes'], f'{row["Votes"]:.2f}%', color='black', ha="center")
+    
+    ax.set_title(f'Predicted Votes for {electorate} in 2024')
     ax.set_xlabel('Party')
     ax.set_ylabel('Votes (%)')
     ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
