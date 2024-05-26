@@ -35,6 +35,8 @@ Based on the distribution of Labour Party vote predictions for 2024, it appears 
 st.subheader("Cross-validate the Model on a Subset of Historical Data")
 st.write("""
 Cross-validation RMSE scores: [10.58263428, 7.5126416, 9.74489136, 8.80247001, 8.84035454]
+""")
+st.write("""
 Mean cross-validation RMSE: 9.09659835907756
 """)
 
