@@ -439,3 +439,8 @@ def show_nn_page():
     st.header("Predictions for 2024")
     electorate_2024 = st.selectbox("Select Electorate for 2024", final_neural_predictions1_2024['Electorate'].unique())
     plot_predictions_2024(final_neural_predictions1_2024, electorate_2024)
+    
+if page == "KNN Model":
+    show_knn_page()
+elif page == "Neural Network Model":
+    show_nn_page()
