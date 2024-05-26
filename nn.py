@@ -108,6 +108,15 @@ comparison_df = create_comparison_df(year, electorate)
 plot_comparison(comparison_df, year, electorate)
 
 # Function to plot 2024 predictions with color by party name as bar charts and add results number
+party_colors = {
+    'ACT New Zealand Vote': 'yellow',
+    'Green Party Vote': 'green',
+    'Labour Party Vote': 'red',
+    'National Party Vote': 'blue',
+    'New Zealand First Party Vote': 'black',
+    'Others Vote': 'grey'
+}
+
 def plot_predictions_2024(predictions_df, electorate):
     predictions = predictions_df[predictions_df['Electorate'] == electorate]
     if predictions.empty:
@@ -115,9 +124,10 @@ def plot_predictions_2024(predictions_df, electorate):
         return
     
     predictions = predictions.melt(id_vars=['Electorate'], value_vars=['ACT New Zealand Vote', 'Green Party Vote', 'Labour Party Vote', 'National Party Vote', 'New Zealand First Party Vote', 'Others Vote'], var_name='Party', value_name='Votes')
+    predictions['Color'] = predictions['Party'].map(party_colors)
     
     fig, ax = plt.subplots()
-    sns.barplot(data=predictions, x='Party', y='Votes', palette='viridis', ax=ax)
+    sns.barplot(data=predictions, x='Party', y='Votes', palette=predictions['Color'], ax=ax)
     
     # Add vote counts on top of each bar
     for index, row in predictions.iterrows():
@@ -133,5 +143,6 @@ def plot_predictions_2024(predictions_df, electorate):
 st.header("Predictions for 2024")
 electorate_2024 = st.selectbox("Select Electorate for 2024", final_neural_predictions1_2024['Electorate'].unique())
 plot_predictions_2024(final_neural_predictions1_2024, electorate_2024)
+
 
 
