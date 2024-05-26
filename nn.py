@@ -9,6 +9,16 @@ combined_neural_predictions = pd.read_csv('combined_neural_predictions.csv')
 final_neural_predictions1_2024 = pd.read_csv('final_neural_predictions1_2024.csv')
 combined_result_list = pd.read_csv('combined_result_list.csv')
 
+# Defining party colors
+party_colors = {
+    'ACT New Zealand Vote': 'yellow',
+    'Green Party Vote': 'green',
+    'Labour Party Vote': 'red',
+    'National Party Vote': 'blue',
+    'New Zealand First Party Vote': 'black',
+    'Others Vote': 'grey'
+}
+
 # Parameters and RMSE
 st.title("Neural Network Model of Predicted Election Results of Party List Vote in Percentage of All Electorates in Auckland")
 
@@ -90,7 +100,7 @@ def plot_comparison(comparison_df, year, electorate):
     
     fig, ax = plt.subplots()
     comparison_df = comparison_df.melt(id_vars=['Feature'], value_vars=['Actual', 'Predicted'], var_name='Type', value_name='Votes')
-    sns.lineplot(data=comparison_df, x='Feature', y='Votes', hue='Type', marker='o', ax=ax)
+    sns.lineplot(data=comparison_df, x='Feature', y='Votes', hue='Type', marker='o', ax=ax, palette=party_colors)
     ax.set_title(f'Comparison of Actual and Predicted Votes by Party for {electorate} in {year}')
     ax.set_xlabel('Party')
     ax.set_ylabel('Votes')
@@ -117,7 +127,7 @@ def plot_predictions_2024(predictions_df, electorate):
     predictions = predictions.melt(id_vars=['Electorate'], value_vars=['ACT New Zealand Vote', 'Green Party Vote', 'Labour Party Vote', 'National Party Vote', 'New Zealand First Party Vote', 'Others Vote'], var_name='Party', value_name='Votes')
     
     fig, ax = plt.subplots()
-    sns.barplot(data=predictions, x='Party', y='Votes', palette='viridis', ax=ax)
+    sns.barplot(data=predictions, x='Party', y='Votes', palette=party_colors, ax=ax)
     
     # Add vote counts on top of each bar
     for index, row in predictions.iterrows():
