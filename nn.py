@@ -68,6 +68,11 @@ def create_comparison_df(year, electorate):
         actual_values = actual_df[feature].values
         predicted_values = predicted_df[feature].values
         
+        # Handle mismatched lengths by aligning data
+        min_length = min(len(actual_values), len(predicted_values))
+        actual_values = actual_values[:min_length]
+        predicted_values = predicted_values[:min_length]
+        
         temp_df = pd.DataFrame({
             'Feature': feature,
             'Actual': actual_values,
