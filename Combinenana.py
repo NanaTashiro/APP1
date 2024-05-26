@@ -309,7 +309,7 @@ def show_nn_page():
     - Learning Rate Init: 0.1
     - Max Iter: 200
     - Solver: 'adam'
-    - normalised data RMSE: 9.284181455443612
+    - normalized data RMSE: 9.284181455443612
     """)
     
     st.subheader("Prediction for 2024 Election")
@@ -320,24 +320,24 @@ def show_nn_page():
     """)
     
     def calculate_statistics(df, year, column):
-    stats = {
-        'Year': year,
-        'Count': df[column].count(),
-        'Mean': df[column].mean(),
-        'Std Dev': df[column].std(),
-        'Min': df[column].min(),
-        '25th Percentile': df[column].quantile(0.25),
-        'Median': df[column].median(),
-        '75th Percentile': df[column].quantile(0.75),
-        'Max': df[column].max()
-    }
-    return stats
+        stats = {
+            'Year': year,
+            'Count': df[column].count(),
+            'Mean': df[column].mean(),
+            'Std Dev': df[column].std(),
+            'Min': df[column].min(),
+            '25th Percentile': df[column].quantile(0.25),
+            'Median': df[column].median(),
+            '75th Percentile': df[column].quantile(0.75),
+            'Max': df[column].max()
+        }
+        return stats
 
     # Prepare the actual data for each year
-    actual_2017 = new_combined_result_list[new_combined_result_list['Election Year'] == 2017]
-    actual_2020 = new_combined_result_list[new_combined_result_list['Election Year'] == 2020]
-    actual_2023 = new_combined_result_list[new_combined_result_list['Election Year'] == 2023]
-    predictions_2024 = predictions_2024_df
+    actual_2017 = combined_result_list[combined_result_list['Election Year'] == 2017]
+    actual_2020 = combined_result_list[combined_result_list['Election Year'] == 2020]
+    actual_2023 = combined_result_list[combined_result_list['Election Year'] == 2023]
+    predictions_2024 = final_neural_predictions_2024
 
     # Calculate statistics for each year
     stats_2017 = calculate_statistics(actual_2017, 2017, 'Labour Party Vote')
@@ -467,4 +467,3 @@ if page == "KNN Model":
     show_knn_page()
 elif page == "Neural Network Model":
     show_nn_page()
-
