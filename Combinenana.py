@@ -15,7 +15,7 @@ page = st.sidebar.selectbox("Go to", ["Introduction", "KNN Model", "Neural Netwo
 def show_intro_page():
     st.title("Predicting Election Results (Party Lists) for the Auckland Region")
     
-    st.header("Group 1 Members")
+    st.header("Group 1")
     st.write("""
     - Nana (Nuthita) Tashiro, ID: 21016134
     - Cole
