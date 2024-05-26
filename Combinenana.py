@@ -12,16 +12,6 @@ import seaborn as sns
 st.sidebar.title("Navigation")
 page = st.sidebar.selectbox("Go to", ["KNN Model", "Neural Network Model"])
 
-if page == "KNN Model":
-    from knn_page import show_knn_page
-    show_knn_page()
-elif page == "Neural Network Model":
-    from nn_page import show_nn_page
-    show_nn_page()
-
-
-
-
 def show_knn_page():
     # Subset of features (party votes)
     subset_features = ['National Party Vote', 'Labour Party Vote', 'Green Party Vote', 'New Zealand First Party Vote', 'ACT New Zealand Vote', 'Others Vote']
@@ -439,8 +429,9 @@ def show_nn_page():
     st.header("Predictions for 2024")
     electorate_2024 = st.selectbox("Select Electorate for 2024", final_neural_predictions1_2024['Electorate'].unique())
     plot_predictions_2024(final_neural_predictions1_2024, electorate_2024)
-    
+
 if page == "KNN Model":
     show_knn_page()
 elif page == "Neural Network Model":
     show_nn_page()
+
