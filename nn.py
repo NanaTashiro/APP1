@@ -7,6 +7,31 @@ import matplotlib.pyplot as plt
 final_neural_predictions_2024 = pd.read_csv('final_neural_predictions_2024.csv')
 combined_neural_predictions = pd.read_csv('combined_neural_predictions.csv')
 final_neural_predictions1_2024 = pd.read_csv('final_neural_predictions1_2024.csv')
+final_predictions_2024_df = pd.read_csv('final_predictions_2024_df.csv')
+
+# Load datasets for actual values
+new_merged_demo_polls_path = 'merged_demo_polls.csv'
+new_combined_result_list_path = 'combined_result_list.csv'
+
+new_merged_demo_polls = pd.read_csv(new_merged_demo_polls_path)
+new_combined_result_list = pd.read_csv(new_combined_result_list_path)
+
+# Prepare the training set (2017, 2020, 2023) and the prediction set (2024)
+combined_data_train = pd.concat([new_merged_demo_polls[new_merged_demo_polls['Election Year'] == 2017],
+                                 new_merged_demo_polls[new_merged_demo_polls['Election Year'] == 2020],
+                                 new_merged_demo_polls[new_merged_demo_polls['Election Year'] == 2023]])
+
+combined_targets_train = pd.concat([new_combined_result_list[new_combined_result_list['Election Year'] == 2017],
+                                    new_combined_result_list[new_combined_result_list['Election Year'] == 2020],
+                                    new_combined_result_list[new_combined_result_list['Election Year'] == 2023]])
+
+# Prepare the feature set for 2024 prediction
+prediction_data = new_merged_demo_polls[new_merged_demo_polls['Election Year'] == 2024]
+
+# Splitting the data into features (X) and targets (Y)
+X_train = combined_data_train.drop(columns=['Election Year', 'Electorate'])
+Y_train = combined_targets_train.drop(columns=['Election Year', 'Electorate'])
+X_test = prediction_data.drop(columns=['Election Year', 'Electorate'])
 
 # Parameters and RMSE
 st.title("Neural Network Model of Predicted Election Results of Party List Vote in Percentage of All Electorates in Auckland")
@@ -55,8 +80,8 @@ electorate_mapping = {
     # Add mappings here if necessary
 }
 
-new_combined_result_list = normalize_and_map_electorate_names(combined_neural_predictions, electorate_mapping)
-all_predictions_df = normalize_and_map_electorate_names(final_neural_predictions_2024, electorate_mapping)
+new_combined_result_list = normalize_and_map_electorate_names(new_combined_result_list, electorate_mapping)
+all_predictions_df = normalize_and_map_electorate_names(final_predictions_2024_df, electorate_mapping)
 
 # Function to create comparison DataFrame for a single year
 def create_comparison_df(year, electorate):
@@ -130,6 +155,6 @@ def plot_predictions_2024(predictions_df, electorate):
 
 # User input for 2024 predictions
 st.header("Predictions for 2024")
-electorate_2024 = st.selectbox("Select Electorate for 2024", final_neural_predictions_2024['Electorate'].unique())
-plot_predictions_2024(final_neural_predictions_2024, electorate_2024)
+electorate_2024 = st.selectbox("Select Electorate for 2024", final_neural_predictions1_2024['Electorate'].unique())
+plot_predictions_2024(final_predictions_2024_df, electorate_2024)
 
