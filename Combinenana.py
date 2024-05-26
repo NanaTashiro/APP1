@@ -309,8 +309,7 @@ def show_nn_page():
     - Learning Rate Init: 0.1
     - Max Iter: 200
     - Solver: 'adam'
-    RMSE: 9.284181455443612
-    normalised data
+    - normalised data RMSE: 9.284181455443612
     """)
     
     st.subheader("Prediction for 2024 Election")
@@ -319,6 +318,39 @@ def show_nn_page():
     st.write("""
     Based on the distribution of Labour Party vote predictions for 2024, it appears that the majority of the predictions are clustered at negative. This result is concerning, especially considering the Labour Party's historical significance and strong presence in New Zealand politics.
     """)
+    
+    def calculate_statistics(df, year, column):
+    stats = {
+        'Year': year,
+        'Count': df[column].count(),
+        'Mean': df[column].mean(),
+        'Std Dev': df[column].std(),
+        'Min': df[column].min(),
+        '25th Percentile': df[column].quantile(0.25),
+        'Median': df[column].median(),
+        '75th Percentile': df[column].quantile(0.75),
+        'Max': df[column].max()
+    }
+    return stats
+
+    # Prepare the actual data for each year
+    actual_2017 = new_combined_result_list[new_combined_result_list['Election Year'] == 2017]
+    actual_2020 = new_combined_result_list[new_combined_result_list['Election Year'] == 2020]
+    actual_2023 = new_combined_result_list[new_combined_result_list['Election Year'] == 2023]
+    predictions_2024 = predictions_2024_df
+
+    # Calculate statistics for each year
+    stats_2017 = calculate_statistics(actual_2017, 2017, 'Labour Party Vote')
+    stats_2020 = calculate_statistics(actual_2020, 2020, 'Labour Party Vote')
+    stats_2023 = calculate_statistics(actual_2023, 2023, 'Labour Party Vote')
+    stats_2024 = calculate_statistics(predictions_2024, 2024, 'Labour Party Vote')
+
+    # Combine all statistics into a DataFrame
+    stats_df = pd.DataFrame([stats_2017, stats_2020, stats_2023, stats_2024])
+
+    # Display the statistics
+    st.subheader("Display the statistics the historical data of Labour Party")
+    st.dataframe(stats_df)
     
     st.subheader("Cross-validate the Model on a Subset of Historical Data")
     st.write("""
