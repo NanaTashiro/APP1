@@ -309,10 +309,11 @@ def show_nn_page():
     - Learning Rate Init: 0.1
     - Max Iter: 200
     - Solver: 'adam'
-    - RMSE: 9.284181455443612
+    RMSE: 9.284181455443612
+    normalised data
     """)
     
-    st.subheader("Prediction for 2023 Election")
+    st.subheader("Prediction for 2024 Election")
     st.dataframe(final_neural_predictions_2024)
     
     st.write("""
