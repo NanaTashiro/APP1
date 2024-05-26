@@ -10,8 +10,23 @@ import seaborn as sns
 
 # Navigation
 st.sidebar.title("Navigation")
-page = st.sidebar.selectbox("Go to", ["KNN Model", "Neural Network Model"])
+page = st.sidebar.selectbox("Go to", ["Introduction", "KNN Model", "Neural Network Model"])
 
+def show_intro_page():
+    st.title("Predicting Election Results (Party Lists) for the Auckland Region")
+    
+    st.header("Group 1 Members")
+    st.write("""
+    - Nana (Nuthita) Tashiro, ID: 21016134
+    - Cole
+    - Nazgul Altynbekova, ID: 22012935
+    """)
+    
+    st.header("Research Question")
+    st.write("""
+    How can an integrated prediction model combining different techniques accurately predict the next election results of four major parties and others (ACT New Zealand, Green Party, Labour Party, National Party, Other) for every electorate within the Auckland region if the parliament were dissolved today?
+    """)
+    
 def show_knn_page():
     # Subset of features (party votes)
     subset_features = ['National Party Vote', 'Labour Party Vote', 'Green Party Vote', 'New Zealand First Party Vote', 'ACT New Zealand Vote', 'Others Vote']
@@ -463,7 +478,10 @@ def show_nn_page():
     electorate_2024 = st.selectbox("Select Electorate for 2024", final_neural_predictions1_2024['Electorate'].unique())
     plot_predictions_2024(final_neural_predictions1_2024, electorate_2024)
 
-if page == "KNN Model":
+# Display the selected page
+if page == "Introduction":
+    show_intro_page()
+elif page == "KNN Model":
     show_knn_page()
 elif page == "Neural Network Model":
     show_nn_page()
