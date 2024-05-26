@@ -21,6 +21,7 @@ elif page == "Neural Network Model":
 
 
 
+
 def show_knn_page():
     # Subset of features (party votes)
     subset_features = ['National Party Vote', 'Labour Party Vote', 'Green Party Vote', 'New Zealand First Party Vote', 'ACT New Zealand Vote', 'Others Vote']
