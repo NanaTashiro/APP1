@@ -127,7 +127,7 @@ def plot_predictions_2024(predictions_df, electorate):
     predictions['Color'] = predictions['Party'].map(party_colors)
     
     fig, ax = plt.subplots()
-    sns.barplot(data=predictions, x='Party', y='Votes', palette=predictions['Color'], ax=ax)
+    sns.barplot(data=predictions, x='Party', y='Votes', palette=predictions['Color'].tolist(), ax=ax)
     
     # Add vote counts on top of each bar
     for index, row in predictions.iterrows():
@@ -143,6 +143,7 @@ def plot_predictions_2024(predictions_df, electorate):
 st.header("Predictions for 2024")
 electorate_2024 = st.selectbox("Select Electorate for 2024", final_neural_predictions1_2024['Electorate'].unique())
 plot_predictions_2024(final_neural_predictions1_2024, electorate_2024)
+
 
 
 
